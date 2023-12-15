@@ -1,7 +1,8 @@
 #pragma once
 
-#include <cstdlib>
 #include <algorithm>
+#include <cstdlib>
+#include <utility>
 
 template <typename Type>
 class ArrayPtr {
@@ -16,6 +17,10 @@ public:
         raw_ptr_ = (raw_ptr == nullptr) ? nullptr : raw_ptr;
     }
 
+    explicit ArrayPtr(Type*&& raw_move_ptr) noexcept {
+        raw_ptr_ = (raw_move_ptr == nullptr) ? nullptr : raw_move_ptr;
+    }
+
     ArrayPtr(const ArrayPtr&) = delete;
 
     ~ArrayPtr() {
@@ -25,9 +30,7 @@ public:
     ArrayPtr& operator=(const ArrayPtr&) = delete;
 
     [[nodiscard]] Type* Release() noexcept {
-        Type* array_ptr = raw_ptr_;
-        raw_ptr_ = nullptr;
-        return array_ptr;
+        return std::exchange(raw_ptr_, nullptr);
     }
 
     Type& operator[](size_t index) noexcept {
