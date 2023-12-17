@@ -102,10 +102,12 @@ public:
     }
 
     Type& operator[](size_t index) noexcept {
+        assert(index < size_);
         return items_[index];
     }
 
     const Type& operator[](size_t index) const noexcept {
+        assert(index < size_);
         return items_[index];
     }
 
@@ -158,6 +160,7 @@ public:
     }
 
     Iterator Insert(ConstIterator pos, const Type& value) {
+        assert(pos >= begin() && pos <= end());
         size_t distance = std::distance(cbegin(), pos);
         if (size_ == capacity_) {
             size_t new_capacity = std::max(static_cast<size_t>(1), capacity_ * 2);
@@ -176,6 +179,7 @@ public:
     }
 
     Iterator Insert(ConstIterator pos, Type&& value) {
+        assert(pos >= begin() && pos <= end());
         size_t distance = std::distance(cbegin(), pos);
         if (size_ == capacity_) {
             size_t new_capacity = std::max(static_cast<size_t>(1), capacity_ * 2);
@@ -200,6 +204,7 @@ public:
     }
 
     Iterator Erase(ConstIterator pos) {
+        assert(pos >= begin() && pos < end());
         Iterator erasing_place = const_cast<Iterator>(pos);
         std::move(erasing_place + 1, end(), erasing_place);
         --size_;
