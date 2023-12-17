@@ -29,6 +29,13 @@ public:
 
     ArrayPtr& operator=(const ArrayPtr&) = delete;
 
+    ArrayPtr& operator=(ArrayPtr&& rhs) {
+        if (this != &rhs) {
+            swap(rhs);
+        }
+        return *this;
+    }
+
     [[nodiscard]] Type* Release() noexcept {
         return std::exchange(raw_ptr_, nullptr);
     }
