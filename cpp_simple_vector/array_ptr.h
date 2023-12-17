@@ -17,8 +17,8 @@ public:
         raw_ptr_ = (raw_ptr == nullptr) ? nullptr : raw_ptr;
     }
 
-    explicit ArrayPtr(Type*&& raw_move_ptr) noexcept {
-        raw_ptr_ = (raw_move_ptr == nullptr) ? nullptr : raw_move_ptr;
+    ArrayPtr(ArrayPtr&& other) {
+        raw_ptr_ = std::exchange(other.raw_ptr_, nullptr);
     }
 
     ArrayPtr(const ArrayPtr&) = delete;

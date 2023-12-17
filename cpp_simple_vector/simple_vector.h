@@ -35,7 +35,7 @@ public:
         : items_(ArrayPtr<Type>(size)),
           size_(size),
           capacity_(size) {
-              std::fill(begin(), end(), Type());
+              Fill(begin(), end());
     }
 
     SimpleVector(size_t size, const Type& value)
@@ -49,7 +49,7 @@ public:
         : items_(ArrayPtr<Type>(init.size())),
         size_(init.size()),
         capacity_(init.size()) {
-            std::copy(init.begin(), init.end(), begin());
+            std::move(init.begin(), init.end(), begin());
     }
 
     SimpleVector(ReserveProxyObj new_capacity) {
@@ -63,10 +63,22 @@ public:
             std::copy(other.begin(), other.end(), begin());
     }
 
+    SimpleVector(SimpleVector&& other)
+        : items_(other.capacity_) {
+            swap(other);
+    }
+
     SimpleVector& operator=(const SimpleVector& rhs) {
         if (this != &rhs) {
             SimpleVector copy(rhs);
             swap(copy);
+        }
+        return *this;
+    }
+
+    SimpleVector& operator=(SimpleVector&& rhs) {
+        if (this != &rhs) {
+            swap(rhs);
         }
         return *this;
     }
@@ -124,7 +136,7 @@ public:
             if (capacity_ < new_size) {
                 IncreaseCapacity(std::max(new_size, capacity_ * 2));
             }
-            std::fill(begin() + size_, begin() + new_size, Type());
+            Fill(begin() + size_, begin() + new_size);
             size_ = new_size;
         }
     }
@@ -137,19 +149,45 @@ public:
         ++size_;
     }
 
+    void PushBack(Type&& item) {
+        if (size_ == capacity_) {
+            IncreaseCapacity(std::max(size_t(1), capacity_ * 2));
+        }
+        items_[size_] = std::move(item);
+        ++size_;
+    }
+
     Iterator Insert(ConstIterator pos, const Type& value) {
         size_t distance = std::distance(cbegin(), pos);
         if (size_ == capacity_) {
             size_t new_capacity = std::max(static_cast<size_t>(1), capacity_ * 2);
             ArrayPtr<Type> new_array(new_capacity);
-            std::copy(cbegin(), pos, new_array.Get());
+            std::move(begin(), items_.Get() + distance, new_array.Get());
             new_array[distance] = value;
-            std::copy(pos, cend(), new_array.Get() + (distance + 1));
+            std::move(items_.Get() + distance, end(), new_array.Get() + (distance + 1));
             items_.swap(new_array);
             capacity_ = new_capacity;
         } else {
-            std::copy_backward(pos, cend(), end() + 1);
+            std::move_backward(items_.Get() + distance, end(), end() + 1);
             *(begin() + distance) = value;
+        }
+        ++size_;
+        return begin() + distance;
+    }
+
+    Iterator Insert(ConstIterator pos, Type&& value) {
+        size_t distance = std::distance(cbegin(), pos);
+        if (size_ == capacity_) {
+            size_t new_capacity = std::max(static_cast<size_t>(1), capacity_ * 2);
+            ArrayPtr<Type> new_array(new_capacity);
+            std::move(begin(), items_.Get() + distance, new_array.Get());
+            new_array[distance] = std::move(value);
+            std::move(items_.Get() + distance, end(), new_array.Get() + (distance + 1));
+            items_.swap(new_array);
+            capacity_ = new_capacity;
+        } else {
+            std::move_backward(items_.Get() + distance, end(), end() + 1);
+            *(begin() + distance) = std::move(value);
         }
         ++size_;
         return begin() + distance;
@@ -163,7 +201,7 @@ public:
 
     Iterator Erase(ConstIterator pos) {
         Iterator erasing_place = const_cast<Iterator>(pos);
-        std::copy(pos + 1, cend(), erasing_place);
+        std::move(erasing_place + 1, end(), erasing_place);
         --size_;
         return erasing_place;
     }
@@ -206,9 +244,16 @@ private:
 
     void IncreaseCapacity(size_t new_capacity) {
         ArrayPtr<Type> new_array(new_capacity);
-        std::copy(begin(), end(), new_array.Get());
+        std::move(begin(), end(), new_array.Get());
         items_.swap(new_array);
         capacity_ = new_capacity;
+    }
+
+    void Fill(Iterator first, Iterator last) {
+        if (first < last) {
+            for (; first != last; ++first)
+                *first = std::move(Type{});
+        }
     }
 };
 
